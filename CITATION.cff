@@ -1,0 +1,24 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: CLPM-SEM-M
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Ibrahim
+    family-names: Demirer
+    email: ibrahim.demirer@ukbonn.de
+    affiliation: University Hospital Bonn
+    orcid: 'https://orcid.org/0000-0001-5346-4739'
+identifiers:
+  - type: url
+    value: 'https://github.com/IbrahimDemirer/CLPM-SEM-M'
+keywords:
+  - Structural Equation Modelling
+  - SEM
+  - Cross-Lagged-Panel-Model
+  - Mediation
+  - Longitudinal Analysis
