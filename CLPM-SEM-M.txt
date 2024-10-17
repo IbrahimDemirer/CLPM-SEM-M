@@ -1,0 +1,120 @@
+/*
+Calculating Model I_A: Full-Cross-Lagged-Panel-Model (FCLPM)
+Note:	In all Models Sbentler SE are calculated to account for non-normal
+		distrubtion of Treatment. However, only affects SE not Coeff.
+		Alternativly ADF method could be applied but it introduces many 
+		other problems (convergin of models hard too achieve, low complexicity
+		constrain errors etc.)
+*/
+*(open File mI_fclpm.stsem to view the model in stata SEM)
+
+/*------------------------------------------------------------------------------
+Calculating Model I_B: Full-Cross-Lagged-Panel-Model (FCLPM) with covariates
+Note:	In all Models Sbentler SE are calculated to account for non-normal
+		distrubtion of Treatment. However, only affects SE not Coeff.
+		Alternativly ADF method could be applied but it introduces many 
+		other problems (conver. of models hard to achieve, low complexicity
+		constrain errors etc.)
+-------------------------------------------------------------------------------*/
+global xt0 "Your xt0 variable here"
+global xt1 "Your xt1 variable here"
+global xt2 "Your xt2 variable here"
+
+global mt0 "Your mt0 variable here"
+global mt1 "Your mt1 variable here"
+global mt2 "Your mt2 variable here"
+
+global yt0 "Your yt0 variable here"
+global yt1 "Your yt1 variable here"
+global yt2 "Your yt2 variable here"
+
+
+sem ($yt0 -> $yt1, ) ($mt0 -> $yt1, ) ($mt0 -> $mt1, ) ///
+ ($xt0-> $yt1, ) ($xt0-> $mt1, ) ($xt0-> $xt1, ) ///
+ ($yt1 -> $yt2, ) ($mt1 -> $mt2, ) ($mt1 -> $yt2, ) ($xt1 -> $xt2, ) ///
+ ($xt1 -> $mt2, ) ($xt1 -> $yt2, )  ///
+ ($c -> $xt0 $mt0 $yt0 )  ///
+ ($v1 -> $xt1 $mt1 $yt1) ///
+ ($v2 -> $xt2 $mt2 $yt2) ///
+ ($v1 -> $v2)				///
+ , standardized vce(sbentler)  ///
+ cov(e.$mt0*e.$yt0 e.$xt0*e.$yt0 e.$xt0*e.$mt0 e.$mt1*e.$yt1 ///
+ e.$xt1*e.$yt1 e.$xt1*e.$mt1 e.$xt2*e.$mt2 ///
+ e.$xt2*e.$yt2 e.$mt2*e.$yt2) nocapslatent 
+ estat gof, stats(all)
+estat gof, stats(chi2 rmsea indices)
+estat teffects, standardized
+ estat stdize: nlcom _b[$yt1:$xt0]*_b[$yt2:$yt1]
+ est store std_de
+ estat stdize: nlcom _b[$mt1:$xt0]*_b[$yt2:$mt1]
+ est store std_oie
+ estat stdize: nlcom _b[$xt1:$xt0]*_b[$yt2:$xt1] + ///
+				  _b[$yt1:$xt0]*_b[$yt2:$yt1] + ///
+				  _b[$mt1:$xt0]*_b[$yt2:$mt1]
+				  
+estat stdize: nlcom _b[$yt1:$xt0]*_b[$yt2:$yt1] ///
+						+ _b[$xt1:$xt0]*_b[$yt2:$xt1] 
+						est store std_ode
+estat stdize: nlcom _b[$xt1:$xt0]*_b[$yt2:$xt1] + ///
+				  _b[$yt1:$xt0]*_b[$yt2:$yt1] + ///
+				  _b[$mt1:$xt0]*_b[$yt2:$mt1]
+				  est store std_ote
+estat stdize: nlcom ((_b[$mt1:$xt0]*_b[$yt2:$mt1]) /   ///
+				  (_b[$xt1:$xt0]*_b[$yt2:$xt1] + ///
+				  _b[$yt1:$xt0]*_b[$yt2:$yt1] + ///
+				  _b[$mt1:$xt0]*_b[$yt2:$mt1]))* 100 
+				  est store propm_te
+				  
+estat stdize: nlcom ((_b[$mt1:$xt0]*_b[$yt2:$mt1]) /   ///
+				  (_b[$yt1:$xt0]*_b[$yt2:$yt1] ///
+						+ _b[$xt1:$xt0]*_b[$yt2:$xt1])) * 100 ///
+						, iterate(10000)
+					est store propm_de			  
+ *Examination of Model-Fit based on Hu & Bentler 1999)
+ *good Model fit: RMSEA / RMSEA SB = 0.067(good) ; CFI=0.934.
+ 
+
+ 
+program mI_clpm, rclass 
+sem ($yt0 -> $yt1, ) ($mt0 -> $yt1, ) ($mt0 -> $mt1, ) ///
+ ($xt0-> $yt1, ) ($xt0-> $mt1, ) ($xt0-> $xt1, ) ///
+ ($yt1 -> $yt2, ) ($mt1 -> $mt2, ) ($mt1 -> $yt2, ) ($xt1 -> $xt2, ) ///
+ ($xt1 -> $mt2, ) ($xt1 -> $yt2, )  ///
+ ($c -> $xt0 $mt0 $yt0 )  ///
+ ($v1 -> $xt1 $mt1 $yt1) ///
+ ($v2 -> $xt2 $mt2 $yt2) ///
+ ($v1 -> $v2)				///
+ , standardized vce(sbentler)  ///
+ cov(e.$mt0*e.$yt0 e.$xt0*e.$yt0 e.$xt0*e.$mt0 e.$mt1*e.$yt1 ///
+ e.$xt1*e.$yt1 e.$xt1*e.$mt1 e.$xt2*e.$mt2 ///
+ e.$xt2*e.$yt2 e.$mt2*e.$yt2) nocapslatent 
+ estat gof, stats(chi2 rmsea indices)
+ 
+return scalar ote=_b[$xt1:$xt0]*_b[$yt2:$xt1] + ///
+				  _b[$yt1:$xt0]*_b[$yt2:$yt1] + ///
+				  _b[$mt1:$xt0]*_b[$yt2:$mt1]
+
+return scalar ode=_b[$xt1:$xt0]*_b[$yt2:$xt1] + ///
+				   _b[$yt1:$xt0]*_b[$yt2:$yt1]
+
+return scalar de=_b[$yt1:$xt0]*_b[$yt2:$yt1]
+
+return scalar oie=_b[$mt1:$xt0]*_b[$yt2:$mt1]
+
+return scalar propm_ode= ((_b[$mt1:$xt0]*_b[$yt2:$mt1])/ ///
+				(_b[$xt1:$xt0]*_b[$yt2:$xt1] ///
+				+ _b[$yt1:$xt0]*_b[$yt2:$yt1]))*100
+				
+return scalar propm_ote= ((_b[$mt1:$xt0]*_b[$yt2:$mt1])/ ///
+		(_b[$xt1:$xt0]*_b[$yt2:$xt1] + _b[$yt1:$xt0]*_b[$yt2:$yt1] ///
+		+ _b[$mt1:$xt0]*_b[$yt2:$mt1]))*100
+		
+return scalar propm_de= ((_b[$mt1:$xt0]*_b[$yt2:$mt1])/ ///
+						(_b[$yt1:$xt0]*_b[$yt2:$yt1]))*100
+end
+*To obtain proper CI and estimates via bootstraps
+foreach b in de oie ode ote  propm_de propm_ode  propm_ote { 
+bootstrap r(`b'), reps (10000):mI_clpm, rclass
+est store `b'_I
+estat bootstrap, percentile bc
+}
